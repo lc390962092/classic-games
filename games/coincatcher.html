@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>接金币</title>
-    * { touch-action: manipulation; }
         <style>
         body { touch-action: manipulation; -webkit-tap-highlight-color: transparent;
             margin: 0;
@@ -415,6 +414,15 @@
                 basket.x = Math.max(0, Math.min(canvas.width - basket.width, x - basket.width / 2));
             }
         });
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameRunning) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const x = e.touches[0].clientX - rect.left;
+                basket.x = Math.max(0, Math.min(canvas.width - basket.width, x - basket.width / 2));
+            }
+        }, {passive: false});
 
         moveBasket();
         draw();

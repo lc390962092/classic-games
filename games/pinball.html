@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>弹球</title>
-    * { touch-action: manipulation; }
         <style>
         body { touch-action: manipulation; -webkit-tap-highlight-color: transparent;
             margin: 0;
@@ -345,6 +344,23 @@
             const x = e.clientX - rect.left;
             paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, x - paddle.width / 2));
         });
+
+        // 触摸控制 - 拖动移动弹板
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, x - paddle.width / 2));
+        }, {passive: false});
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, x - paddle.width / 2));
+        }, {passive: false});
 
         movePaddle();
     </script>

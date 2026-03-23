@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>扫雷</title>
-    * { touch-action: manipulation; }
         <style>
         body { touch-action: manipulation; -webkit-tap-highlight-color: transparent;
             margin: 0;
@@ -316,6 +315,42 @@
                     });
                     cell.addEventListener('mouseup', () => {
                         if (!gameOver) document.getElementById('faceBtn').textContent = '🙂';
+                    });
+
+                    // 触摸控制 - 点击揭开，长按标记
+                    let touchStartTime = 0;
+                    let touchTimer = null;
+                    
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        touchStartTime = Date.now();
+                        touchTimer = setTimeout(() => {
+                            handleRightClick(r, c);
+                            touchTimer = null;
+                        }, 500);
+                        if (!gameOver && !revealed[r][c]) {
+                            document.getElementById('faceBtn').textContent = '😮';
+                        }
+                    });
+                    
+                    cell.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        const touchDuration = Date.now() - touchStartTime;
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                            touchTimer = null;
+                            if (touchDuration < 500) {
+                                handleClick(r, c);
+                            }
+                        }
+                        if (!gameOver) document.getElementById('faceBtn').textContent = '🙂';
+                    });
+                    
+                    cell.addEventListener('touchmove', () => {
+                        if (touchTimer) {
+                            clearTimeout(touchTimer);
+                            touchTimer = null;
+                        }
                     });
 
                     boardEl.appendChild(cell);
