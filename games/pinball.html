@@ -345,7 +345,7 @@
             paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, x - paddle.width / 2));
         });
 
-        // 触摸控制 - 拖动移动弹板
+        // 触摸控制（移动端支持）
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const rect = canvas.getBoundingClientRect();
