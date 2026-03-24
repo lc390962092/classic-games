@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,7 +33,7 @@
         h1 {
             font-size: 3em;
             margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .subtitle {
@@ -51,7 +52,7 @@
             background: white;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
             cursor: pointer;
             text-decoration: none;
@@ -60,7 +61,7 @@
 
         .game-card:hover {
             transform: translateY(-10px) scale(1.02);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .game-icon {
@@ -72,15 +73,45 @@
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        .game-card:nth-child(2) .game-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .game-card:nth-child(3) .game-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .game-card:nth-child(4) .game-icon { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .game-card:nth-child(5) .game-icon { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
-        .game-card:nth-child(6) .game-icon { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); }
-        .game-card:nth-child(7) .game-icon { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); }
-        .game-card:nth-child(8) .game-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .game-card:nth-child(9) .game-icon { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-        .game-card:nth-child(10) .game-icon { background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%); }
+        .game-card:nth-child(2) .game-icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .game-card:nth-child(3) .game-icon {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .game-card:nth-child(4) .game-icon {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .game-card:nth-child(5) .game-icon {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .game-card:nth-child(6) .game-icon {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+        }
+
+        .game-card:nth-child(7) .game-icon {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        }
+
+        .game-card:nth-child(8) .game-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .game-card:nth-child(9) .game-icon {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .game-card:nth-child(10) .game-icon {
+            background: linear-gradient(135deg, #fc5c7d 0%, #6a82fb 100%);
+        }
+
+        .game-card:nth-child(11) .game-icon {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
 
         .game-info {
             padding: 25px;
@@ -117,7 +148,7 @@
         }
 
         .stats {
-            background: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border-radius: 15px;
             padding: 20px;
@@ -128,11 +159,17 @@
         }
 
         @media (max-width: 600px) {
-            h1 { font-size: 2em; }
-            .games-grid { grid-template-columns: 1fr; }
+            h1 {
+                font-size: 2em;
+            }
+
+            .games-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -141,7 +178,7 @@
         </header>
 
         <div class="stats">
-            📦 共收录 <strong>10</strong> 款经典游戏 | 🎯 点击卡片开始游戏
+            📦 共收录 <strong>11</strong> 款经典游戏 | 🎯 点击卡片开始游戏
         </div>
 
         <div class="games-grid">
@@ -244,6 +281,16 @@
                     <span class="game-tag">街机</span>
                 </div>
             </a>
+
+            <a href="games/gobang.html" class="game-card">
+                <div class="game-icon">⚫</div>
+                <div class="game-info">
+                    <div class="game-title">五子棋</div>
+                    <div class="game-desc">经典两人对弈棋类游戏，连成五子即可获胜</div>
+                    <span class="game-tag">棋类</span>
+                    <span class="game-tag">对战</span>
+                </div>
+            </a>
         </div>
 
         <footer>
@@ -251,4 +298,5 @@
         </footer>
     </div>
 </body>
+
 </html>
