@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>点亮灯泡</title>
+  <link rel="stylesheet" href="lightpuzzle_styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero-card">
+      <p class="eyebrow">LIGHT PUZZLE</p>
+      <h1>点亮灯泡</h1>
+      <p class="subtitle">点击任意方块，会切换自己和上下左右的灯。把所有灯全部点亮，就能过关。</p>
+    </section>
+
+    <section class="panel status-panel">
+      <div class="stat">
+        <span class="stat-label">关卡</span>
+        <strong id="levelLabel">1 / 5</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">步数</span>
+        <strong id="moveLabel">0</strong>
+      </div>
+      <div class="stat">
+        <span class="stat-label">最佳</span>
+        <strong id="bestLabel">-</strong>
+      </div>
+    </section>
+
+    <section class="panel board-panel">
+      <div id="message" class="message" aria-live="polite">让所有灯都亮起来。</div>
+      <div id="board" class="board" role="grid" aria-label="点亮灯泡游戏棋盘"></div>
+    </section>
+
+    <section class="panel controls">
+      <button id="restartButton" class="button secondary" type="button">重新开始</button>
+      <button id="hintButton" class="button ghost" type="button">提示</button>
+      <button id="nextButton" class="button primary" type="button">下一关</button>
+    </section>
+  </main>
+
+  <script src="lightpuzzle_script.js"></script>
+</body>
+</html>
