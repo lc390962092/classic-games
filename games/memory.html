@@ -62,6 +62,8 @@
             transform-style: preserve-3d;
             position: relative;
             touch-action: manipulation;
+            box-sizing: border-box;
+            flex-shrink: 0;
         }
         .card:active:not(.flipped):not(.matched) { transform: scale(0.95); }
         .card.flipped { background: white; transform: rotateY(180deg); }
@@ -135,10 +137,10 @@
         
         @media (max-width: 600px) {
             h1 { font-size: 1.5em; }
-            #board { grid-template-columns: repeat(4, 70px); gap: 8px; padding: 12px; }
-            .card { width: 70px; height: 70px; font-size: 1.6em; }
+            #board { padding: 10px; }
             .side-panel { min-width: 150px; padding: 15px; }
             .game-wrapper { flex-direction: column; align-items: center; }
+            .info-box { padding: 8px 14px; font-size: 0.85em; }
         }
     </style>
 </head>
@@ -150,6 +152,7 @@
             <div class="info">
                 <div class="info-box"><span>步数: <strong id="moves">0</strong></span></div>
                 <div class="info-box"><span>时间: <strong id="time">00:00</strong></span></div>
+                <div class="info-box"><span>主题: <strong id="themeName">水果</strong></span></div>
             </div>
             <div id="board"></div>
         </div>
@@ -184,50 +187,97 @@
     </div>
 
     <script>
-        const emojis = ['🍎', '🍌', '🍇', '🍊', '🍓', '🍑', '🍍', '🥝', '🍒', '🍉', '🥥', '🍋', '🍐', '🍈', '🍏', '🥭', '🫐', '🍅'];
+        const themes = {
+            fruits: ['🍎', '🍌', '🍇', '🍊', '🍓', '🍑', '🍍', '🥝', '🍒', '🍉', '🥥', '🍋', '🍐', '🍈', '🍏', '🥭', '🫐', '🍅'],
+            vehicles: ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '🚜', '🛵', '🚲', '🛴', '🚂', '🚁'],
+            dinosaurs: ['🦖', '🦕', '🐊', '🦎', '🐢', '🦣', '🦔', '🐾', '🌿', '🥚', '🪨', '🌲', '🏔️', '☄️', '🌋', '🦴', '🪹', '🦤'],
+            animals: ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦']
+        };
+        const themeNames = { fruits: '水果', vehicles: '车辆', dinosaurs: '恐龙', animals: '动物' };
+        let currentTheme = '';
         let cards = [], flippedCards = [], matchedPairs = 0, moves = 0;
         let timer = 0, timerInterval = null, gameActive = false, currentDiff = 'easy';
+
+        function getRandomTheme() {
+            const keys = Object.keys(themes);
+            return keys[Math.floor(Math.random() * keys.length)];
+        }
+
+        function calculateCardSize(cols, rows) {
+            const isMobile = window.innerWidth < 600;
+            const gap = isMobile ? 6 : 10;
+            const padding = isMobile ? 12 : 30;
+            const availableWidth = Math.min(window.innerWidth - padding * 2, isMobile ? 9999 : 600);
+            const headerHeight = document.querySelector('h1').offsetHeight + 20;
+            const infoHeight = document.querySelector('.info').offsetHeight + 20;
+            const sidePanel = document.querySelector('.side-panel');
+            const sidePanelHeight = isMobile ? 0 : sidePanel.offsetHeight + 40;
+            const helpHeight = document.querySelector('.game-help').offsetHeight + 20;
+            const reservedHeight = Math.max(headerHeight + infoHeight + helpHeight + 40, sidePanelHeight + headerHeight + 20);
+            const availableHeight = window.innerHeight - reservedHeight;
+            const sizeByWidth = Math.floor((availableWidth - gap * (cols - 1)) / cols);
+            const sizeByHeight = Math.floor((availableHeight - gap * (rows - 1)) / rows);
+            const maxSize = isMobile ? 60 : 80;
+            const cardSize = Math.min(sizeByWidth, sizeByHeight, maxSize);
+            return Math.max(cardSize, 36);
+        }
 
         function initGame() {
             const board = document.getElementById('board');
             const diff = document.querySelector('input[name="diff"]:checked').value;
             currentDiff = diff;
+            currentTheme = getRandomTheme();
             const cols = diff === 'easy' ? 4 : 6;
             const rows = diff === 'easy' ? 4 : 6;
             const totalCards = cols * rows;
             const pairsNeeded = totalCards / 2;
-            
-            board.style.gridTemplateColumns = `repeat(${cols}, ${window.innerWidth < 600 ? 70 : 80}px)`;
-            
-            const gameEmojis = emojis.slice(0, pairsNeeded);
+
+            const cardSize = calculateCardSize(cols, rows);
+            const gap = window.innerWidth < 600 ? 6 : 10;
+
+            board.style.gridTemplateColumns = `repeat(${cols}, ${cardSize}px)`;
+            board.style.gridTemplateRows = `repeat(${rows}, ${cardSize}px)`;
+            board.style.gap = `${gap}px`;
+
+            const themeEmojis = themes[currentTheme];
+            const gameEmojis = [];
+            for (let i = 0; i < pairsNeeded; i++) {
+                gameEmojis.push(themeEmojis[i % themeEmojis.length]);
+            }
             cards = [...gameEmojis, ...gameEmojis];
             for (let i = cards.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [cards[i], cards[j]] = [cards[j], cards[i]];
             }
-            
+
+            document.getElementById('themeName').textContent = themeNames[currentTheme];
+
             flippedCards = []; matchedPairs = 0; moves = 0; timer = 0; gameActive = true;
             clearInterval(timerInterval);
             document.getElementById('moves').textContent = '0';
             document.getElementById('time').textContent = '00:00';
             document.getElementById('winMessage').style.display = 'none';
-            
+
             timerInterval = setInterval(() => {
                 timer++;
                 const mins = String(Math.floor(timer / 60)).padStart(2, '0');
                 const secs = String(timer % 60).padStart(2, '0');
                 document.getElementById('time').textContent = `${mins}:${secs}`;
             }, 1000);
-            renderBoard();
+            renderBoard(cardSize);
         }
 
-        function renderBoard() {
+        function renderBoard(cardSize) {
             const board = document.getElementById('board');
             board.innerHTML = '';
+            const fontSize = Math.max(cardSize * 0.5, 20);
             cards.forEach((emoji, index) => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.dataset.index = index;
+                card.style.width = `${cardSize}px`;
+                card.style.height = `${cardSize}px`;
+                card.style.fontSize = `${fontSize}px`;
                 card.innerHTML = `<div class="front">❓</div><div class="back">${emoji}</div>`;
                 card.onclick = () => flipCard(index);
                 card.ontouchstart = (e) => { e.preventDefault(); flipCard(index); };
