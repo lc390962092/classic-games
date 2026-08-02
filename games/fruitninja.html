@@ -27,6 +27,9 @@
         .score { font-size: 1.6em; font-weight: bold; }
         .combo { color: #ffd700; font-weight: bold; opacity: 0; transition: opacity 0.2s; }
         .combo.show { opacity: 1; }
+        .time { font-size: 1.5em; font-weight: bold; color: #fff; text-shadow: 1px 1px 3px rgba(0,0,0,0.4); }
+        .time.warning { color: #ff4757; animation: pulse 0.6s infinite; }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .lives { font-size: 1.5em; }
         .overlay {
             position: absolute; inset: 0; background: rgba(0,0,0,0.55);
@@ -44,16 +47,16 @@
             width: 90%;
         }
         .overlay h1 { font-size: 2.6em; margin-bottom: 12px; text-shadow: 2px 2px 6px rgba(0,0,0,0.5); }
-        .overlay p { font-size: 1.1em; margin-bottom: 25px; opacity: 0.9; line-height: 1.5; }
-        .difficulty-group {
-            display: flex; justify-content: center; gap: 10px; margin-bottom: 22px; flex-wrap: wrap;
+        .overlay p { font-size: 1.05em; margin-bottom: 20px; opacity: 0.9; line-height: 1.5; }
+        .option-group {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
         }
-        .difficulty-group label {
+        .option-group label {
             cursor: pointer; padding: 10px 18px; border-radius: 30px; border: 2px solid rgba(255,255,255,0.3);
             font-weight: bold; transition: all 0.2s; background: rgba(255,255,255,0.08);
         }
-        .difficulty-group input { display: none; }
-        .difficulty-group input:checked + label {
+        .option-group input { display: none; }
+        .option-group input:checked + label {
             background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
             border-color: transparent; transform: scale(1.05);
             box-shadow: 0 6px 20px rgba(255,107,107,0.4);
@@ -73,7 +76,7 @@
             .overlay-box { padding: 28px 24px; }
             .overlay h1 { font-size: 2.1em; }
             .btn { padding: 14px 38px; font-size: 1.2em; }
-            .difficulty-group label { padding: 9px 14px; font-size: 0.95em; }
+            .option-group label { padding: 9px 14px; font-size: 0.95em; }
         }
     </style>
 </head>
@@ -85,16 +88,22 @@
                 <div class="score">得分: <span id="score">0</span></div>
                 <div class="combo" id="combo"></div>
             </div>
-            <div class="lives" id="lives">❤️❤️❤️</div>
+            <div class="time" id="time">60s</div>
         </div>
-        <div class="tip">鼠标/手指滑动切水果，避开炸弹</div>
+        <div class="tip" id="tip">滑动切开水果，切到炸弹扣 5 秒</div>
     </div>
 
     <div class="overlay" id="startOverlay">
         <div class="overlay-box">
             <h1>🍉 切水果</h1>
-            <p>滑动切开飞出的水果，避开炸弹，连击可获得额外分数</p>
-            <div class="difficulty-group">
+            <p id="startDesc">60 秒倒计时，切水果得分，切炸弹扣 5 秒</p>
+            <div class="option-group">
+                <input type="radio" name="mode" id="modeTime" value="time" checked>
+                <label for="modeTime">⏱️ 限时模式</label>
+                <input type="radio" name="mode" id="modeSurvival" value="survival">
+                <label for="modeSurvival">❤️ 生存模式</label>
+            </div>
+            <div class="option-group">
                 <input type="radio" name="difficulty" id="diffEasy" value="easy" checked>
                 <label for="diffEasy">简单</label>
                 <input type="radio" name="difficulty" id="diffNormal" value="normal">
@@ -109,7 +118,8 @@
     <div class="overlay hidden" id="gameOverOverlay">
         <div class="overlay-box">
             <h1>游戏结束</h1>
-            <p>难度: <span id="finalDifficulty"></span> · 最终得分: <span id="finalScore">0</span></p>
+            <p><span id="finalMode"></span> · <span id="finalDifficulty"></span></p>
+            <p>最终得分: <span id="finalScore">0></span></p>
             <button class="btn" id="restartBtn"><span class="icon">🔄</span>再来一局</button>
         </div>
     </div>
@@ -118,15 +128,19 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
-        const livesEl = document.getElementById('lives');
+        const timeEl = document.getElementById('time');
         const comboEl = document.getElementById('combo');
+        const tipEl = document.getElementById('tip');
         const startOverlay = document.getElementById('startOverlay');
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         const finalScoreEl = document.getElementById('finalScore');
+        const finalModeEl = document.getElementById('finalMode');
         const finalDifficultyEl = document.getElementById('finalDifficulty');
         const startBtn = document.getElementById('startBtn');
         const restartBtn = document.getElementById('restartBtn');
         const difficultyInputs = document.querySelectorAll('input[name="difficulty"]');
+        const modeInputs = document.querySelectorAll('input[name="mode"]');
+        const startDesc = document.getElementById('startDesc');
 
         let W, H, DPR;
         function resize() {
@@ -155,16 +169,22 @@
         const BOMB = { emoji: '💣', color: '#2d3436' };
 
         const DIFFICULTY = {
-            easy:   { spawnBase: 55, spawnMin: 35, bombRate: 0.04, speedMul: 0.85, gravityMul: 0.85, batchChance: 0.25, lives: 5 },
+            easy:   { spawnBase: 55, spawnMin: 34, bombRate: 0.04, speedMul: 0.85, gravityMul: 0.85, batchChance: 0.25, lives: 5 },
             normal: { spawnBase: 45, spawnMin: 28, bombRate: 0.08, speedMul: 1.00, gravityMul: 1.00, batchChance: 0.35, lives: 3 },
             hard:   { spawnBase: 32, spawnMin: 20, bombRate: 0.15, speedMul: 1.25, gravityMul: 1.10, batchChance: 0.55, lives: 3 }
         };
+        const TIME_LIMIT = 60;
+        const BOMB_PENALTY = 5;
+
         let currentDifficulty = 'easy';
         let diffConfig = DIFFICULTY.easy;
+        let currentMode = 'time';
 
-        let gameState = 'start'; // start, playing, over
+        let gameState = 'start';
         let score = 0;
         let lives = 3;
+        let timeLeft = TIME_LIMIT;
+        let timeFrames = 0;
         let fruits = [];
         let particles = [];
         let trail = [];
@@ -181,12 +201,28 @@
             for (let input of difficultyInputs) if (input.checked) return input.value;
             return 'easy';
         }
+        function getSelectedMode() {
+            for (let input of modeInputs) if (input.checked) return input.value;
+            return 'time';
+        }
+
+        for (let input of modeInputs) {
+            input.addEventListener('change', () => {
+                const mode = getSelectedMode();
+                startDesc.textContent = mode === 'time'
+                    ? `${TIME_LIMIT} 秒倒计时，切水果得分，切炸弹扣 ${BOMB_PENALTY} 秒`
+                    : '切水果得分，切到炸弹或漏掉 3 个水果游戏结束';
+            });
+        }
 
         function resetGame() {
             currentDifficulty = getSelectedDifficulty();
             diffConfig = DIFFICULTY[currentDifficulty];
+            currentMode = getSelectedMode();
             score = 0; missedCount = 0;
             lives = diffConfig.lives;
+            timeLeft = TIME_LIMIT;
+            timeFrames = 0;
             fruits = []; particles = []; trail = [];
             spawnTimer = 0; spawnInterval = diffConfig.spawnBase; difficulty = 1;
             comboCount = 0; comboTimer = 0;
@@ -195,27 +231,36 @@
             startOverlay.classList.add('hidden');
             gameOverOverlay.classList.add('hidden');
 
-            // 立即生成首批水果，避免等待
             spawnFruit();
             setTimeout(spawnFruit, 250);
-            if (Math.random() < diffConfig.batchChance + 0.3) {
-                setTimeout(spawnFruit, 500);
-            }
+            if (Math.random() < diffConfig.batchChance + 0.3) setTimeout(spawnFruit, 500);
             spawnTimer = Math.max(0, spawnInterval - 15);
+
+            tipEl.textContent = currentMode === 'time'
+                ? `滑动切开水果，切到炸弹扣 ${BOMB_PENALTY} 秒`
+                : '滑动切开水果，避开炸弹，漏掉 3 个水果结束';
         }
 
         function updateUI() {
             scoreEl.textContent = score;
-            let hearts = '';
-            for (let i = 0; i < lives; i++) hearts += '❤️';
-            livesEl.textContent = hearts || '💔';
+            if (currentMode === 'time') {
+                timeEl.textContent = Math.ceil(timeLeft) + 's';
+                timeEl.classList.toggle('warning', timeLeft <= 10);
+            } else {
+                let hearts = '';
+                for (let i = 0; i < lives; i++) hearts += '❤️';
+                timeEl.textContent = hearts || '💔';
+                timeEl.classList.remove('warning');
+            }
         }
 
         function gameOver() {
             gameState = 'over';
             finalScoreEl.textContent = score;
-            const labels = { easy: '简单', normal: '普通', hard: '困难' };
-            finalDifficultyEl.textContent = labels[currentDifficulty] || currentDifficulty;
+            const modeLabels = { time: '限时模式', survival: '生存模式' };
+            const diffLabels = { easy: '简单', normal: '普通', hard: '困难' };
+            finalModeEl.textContent = modeLabels[currentMode] || currentMode;
+            finalDifficultyEl.textContent = diffLabels[currentDifficulty] || currentDifficulty;
             gameOverOverlay.classList.remove('hidden');
         }
 
@@ -322,6 +367,7 @@
         function checkSlice(curr, prev) {
             if (!prev) return;
             let slicedThisMove = 0;
+            let hitBomb = false;
             for (let f of fruits) {
                 if (f.sliced) continue;
                 const dx = curr.x - prev.x;
@@ -335,9 +381,15 @@
                 if (dist < f.size * 0.75) {
                     f.sliced = true;
                     if (f.type === 'bomb') {
+                        hitBomb = true;
                         spawnBombExplosion(f);
-                        gameOver();
-                        return;
+                        if (currentMode === 'time') {
+                            timeLeft = Math.max(0, timeLeft - BOMB_PENALTY);
+                            updateUI();
+                            if (timeLeft <= 0) gameOver();
+                        } else {
+                            gameOver();
+                        }
                     } else {
                         slicedThisMove++;
                         score += 10;
@@ -345,6 +397,7 @@
                     }
                 }
             }
+            if (hitBomb) return;
             if (slicedThisMove > 0) {
                 comboCount += slicedThisMove;
                 if (comboCount >= 3) {
@@ -384,6 +437,14 @@
         function update() {
             if (gameState !== 'playing') return;
 
+            timeFrames++;
+            if (currentMode === 'time' && timeFrames >= 60) {
+                timeFrames = 0;
+                timeLeft--;
+                updateUI();
+                if (timeLeft <= 0) gameOver();
+            }
+
             spawnTimer++;
             if (spawnTimer >= spawnInterval) {
                 spawnFruit();
@@ -403,10 +464,12 @@
                 f.rotation += f.rotSpeed;
                 if (!f.sliced && !f.missed && f.y > H + f.size && f.vy > 0) {
                     f.missed = true;
-                    missedCount++;
-                    lives--;
-                    updateUI();
-                    if (lives <= 0) gameOver();
+                    if (currentMode === 'survival') {
+                        missedCount++;
+                        lives--;
+                        updateUI();
+                        if (lives <= 0) gameOver();
+                    }
                 }
             }
             fruits = fruits.filter(f => f.y < H + f.size * 2 || f.type === 'bomb');
