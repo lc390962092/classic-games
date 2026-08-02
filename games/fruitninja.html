@@ -194,6 +194,14 @@
             gameState = 'playing';
             startOverlay.classList.add('hidden');
             gameOverOverlay.classList.add('hidden');
+
+            // 立即生成首批水果，避免等待
+            spawnFruit();
+            setTimeout(spawnFruit, 250);
+            if (Math.random() < diffConfig.batchChance + 0.3) {
+                setTimeout(spawnFruit, 500);
+            }
+            spawnTimer = Math.max(0, spawnInterval - 15);
         }
 
         function updateUI() {
