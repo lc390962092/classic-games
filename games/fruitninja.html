@@ -34,21 +34,46 @@
             pointer-events: auto; backdrop-filter: blur(4px);
         }
         .overlay.hidden { display: none; }
-        .overlay h1 { font-size: 2.8em; margin-bottom: 10px; text-shadow: 2px 2px 6px rgba(0,0,0,0.5); }
-        .overlay p { font-size: 1.2em; margin-bottom: 25px; opacity: 0.9; }
+        .overlay-box {
+            background: rgba(255,255,255,0.12);
+            border-radius: 24px;
+            padding: 35px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 420px;
+            width: 90%;
+        }
+        .overlay h1 { font-size: 2.6em; margin-bottom: 12px; text-shadow: 2px 2px 6px rgba(0,0,0,0.5); }
+        .overlay p { font-size: 1.1em; margin-bottom: 25px; opacity: 0.9; line-height: 1.5; }
+        .difficulty-group {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 22px; flex-wrap: wrap;
+        }
+        .difficulty-group label {
+            cursor: pointer; padding: 10px 18px; border-radius: 30px; border: 2px solid rgba(255,255,255,0.3);
+            font-weight: bold; transition: all 0.2s; background: rgba(255,255,255,0.08);
+        }
+        .difficulty-group input { display: none; }
+        .difficulty-group input:checked + label {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
+            border-color: transparent; transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        }
         .btn {
             background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
-            border: none; padding: 15px 45px; font-size: 1.3em; color: white;
+            border: none; padding: 16px 50px; font-size: 1.4em; color: white;
             border-radius: 50px; cursor: pointer; font-weight: bold;
             box-shadow: 0 8px 25px rgba(0,0,0,0.3); transition: transform 0.2s, box-shadow 0.2s;
-            pointer-events: auto;
+            pointer-events: auto; display: inline-flex; align-items: center; gap: 10px;
         }
         .btn:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 35px rgba(0,0,0,0.4); }
         .btn:active { transform: scale(0.98); }
-        .tip { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 0.9em; opacity: 0.8; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); }
+        .btn .icon { font-size: 1.2em; }
+        .tip { position: absolute; bottom: 12px; left: 0; width: 100%; text-align: center; font-size: 0.9em; opacity: 0.8; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); pointer-events: none; }
         @media (max-width: 600px) {
-            .overlay h1 { font-size: 2.2em; }
-            .btn { padding: 13px 35px; font-size: 1.1em; }
+            .overlay-box { padding: 28px 24px; }
+            .overlay h1 { font-size: 2.1em; }
+            .btn { padding: 14px 38px; font-size: 1.2em; }
+            .difficulty-group label { padding: 9px 14px; font-size: 0.95em; }
         }
     </style>
 </head>
@@ -66,15 +91,27 @@
     </div>
 
     <div class="overlay" id="startOverlay">
-        <h1>🍉 切水果</h1>
-        <p>切开水果得分，切到炸弹或漏掉 3 个水果游戏结束</p>
-        <button class="btn" id="startBtn">开始游戏</button>
+        <div class="overlay-box">
+            <h1>🍉 切水果</h1>
+            <p>滑动切开飞出的水果，避开炸弹，连击可获得额外分数</p>
+            <div class="difficulty-group">
+                <input type="radio" name="difficulty" id="diffEasy" value="easy" checked>
+                <label for="diffEasy">简单</label>
+                <input type="radio" name="difficulty" id="diffNormal" value="normal">
+                <label for="diffNormal">普通</label>
+                <input type="radio" name="difficulty" id="diffHard" value="hard">
+                <label for="diffHard">困难</label>
+            </div>
+            <button class="btn" id="startBtn"><span class="icon">▶️</span>开始游戏</button>
+        </div>
     </div>
 
     <div class="overlay hidden" id="gameOverOverlay">
-        <h1>游戏结束</h1>
-        <p>最终得分: <span id="finalScore">0</span></p>
-        <button class="btn" id="restartBtn">再来一局</button>
+        <div class="overlay-box">
+            <h1>游戏结束</h1>
+            <p>难度: <span id="finalDifficulty"></span> · 最终得分: <span id="finalScore">0</span></p>
+            <button class="btn" id="restartBtn"><span class="icon">🔄</span>再来一局</button>
+        </div>
     </div>
 
     <script>
@@ -86,8 +123,10 @@
         const startOverlay = document.getElementById('startOverlay');
         const gameOverOverlay = document.getElementById('gameOverOverlay');
         const finalScoreEl = document.getElementById('finalScore');
+        const finalDifficultyEl = document.getElementById('finalDifficulty');
         const startBtn = document.getElementById('startBtn');
         const restartBtn = document.getElementById('restartBtn');
+        const difficultyInputs = document.querySelectorAll('input[name="difficulty"]');
 
         let W, H, DPR;
         function resize() {
@@ -115,6 +154,14 @@
         ];
         const BOMB = { emoji: '💣', color: '#2d3436' };
 
+        const DIFFICULTY = {
+            easy:   { spawnBase: 55, spawnMin: 35, bombRate: 0.04, speedMul: 0.85, gravityMul: 0.85, batchChance: 0.25, lives: 5 },
+            normal: { spawnBase: 45, spawnMin: 28, bombRate: 0.08, speedMul: 1.00, gravityMul: 1.00, batchChance: 0.35, lives: 3 },
+            hard:   { spawnBase: 32, spawnMin: 20, bombRate: 0.15, speedMul: 1.25, gravityMul: 1.10, batchChance: 0.55, lives: 3 }
+        };
+        let currentDifficulty = 'easy';
+        let diffConfig = DIFFICULTY.easy;
+
         let gameState = 'start'; // start, playing, over
         let score = 0;
         let lives = 3;
@@ -124,16 +171,24 @@
         let lastInput = null;
         let isInputDown = false;
         let spawnTimer = 0;
-        let spawnInterval = 45;
+        let spawnInterval = 55;
         let difficulty = 1;
         let comboCount = 0;
         let comboTimer = 0;
         let missedCount = 0;
 
+        function getSelectedDifficulty() {
+            for (let input of difficultyInputs) if (input.checked) return input.value;
+            return 'easy';
+        }
+
         function resetGame() {
-            score = 0; lives = 3; missedCount = 0;
+            currentDifficulty = getSelectedDifficulty();
+            diffConfig = DIFFICULTY[currentDifficulty];
+            score = 0; missedCount = 0;
+            lives = diffConfig.lives;
             fruits = []; particles = []; trail = [];
-            spawnTimer = 0; spawnInterval = 1200; difficulty = 1;
+            spawnTimer = 0; spawnInterval = diffConfig.spawnBase; difficulty = 1;
             comboCount = 0; comboTimer = 0;
             updateUI();
             gameState = 'playing';
@@ -151,21 +206,27 @@
         function gameOver() {
             gameState = 'over';
             finalScoreEl.textContent = score;
+            const labels = { easy: '简单', normal: '普通', hard: '困难' };
+            finalDifficultyEl.textContent = labels[currentDifficulty] || currentDifficulty;
             gameOverOverlay.classList.remove('hidden');
         }
 
+        function baseSize() {
+            return Math.min(90, Math.max(62, Math.min(W, H) * 0.13));
+        }
+
         function spawnFruit() {
-            const isBomb = Math.random() < Math.min(0.05 + difficulty * 0.02, 0.25);
-            const size = 45 + Math.random() * 15;
+            const isBomb = Math.random() < Math.min(diffConfig.bombRate + difficulty * 0.02, 0.35);
+            const size = baseSize() + Math.random() * 14;
             const x = size + Math.random() * (W - size * 2);
             const y = H + size;
-            const speed = 10 + Math.random() * 6 + difficulty * 1.5;
+            const speed = (10 + Math.random() * 6 + difficulty * 1.5) * diffConfig.speedMul;
             const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.8;
             const vx = Math.cos(angle) * speed * (0.6 + Math.random() * 0.4);
             const vy = Math.sin(angle) * speed;
-            const gravity = 0.18 + Math.random() * 0.05;
+            const gravity = (0.18 + Math.random() * 0.05) * diffConfig.gravityMul;
             const rotation = Math.random() * Math.PI * 2;
-            const rotSpeed = (Math.random() - 0.5) * 0.15;
+            const rotSpeed = (Math.random() - 0.5) * 0.12;
 
             const item = isBomb ? BOMB : FRUITS[Math.floor(Math.random() * FRUITS.length)];
             fruits.push({
@@ -176,20 +237,18 @@
         }
 
         function spawnSlicedHalves(f) {
-            const halfSize = f.size * 0.55;
             const juiceColor = f.item.color;
-            for (let i = 0; i < 12; i++) {
+            for (let i = 0; i < 16; i++) {
                 particles.push({
                     x: f.x, y: f.y,
                     vx: (Math.random() - 0.5) * 10,
                     vy: (Math.random() - 0.5) * 10,
-                    size: 2 + Math.random() * 5,
+                    size: 2 + Math.random() * 6,
                     color: juiceColor,
                     life: 1.0, decay: 0.02 + Math.random() * 0.02,
                     type: 'juice'
                 });
             }
-            // two halves
             for (let side = -1; side <= 1; side += 2) {
                 particles.push({
                     x: f.x, y: f.y,
@@ -198,7 +257,7 @@
                     size: f.size,
                     emoji: f.item.emoji,
                     rotation: f.rotation,
-                    rotSpeed: side * 0.15,
+                    rotSpeed: side * 0.12,
                     gravity: 0.25,
                     life: 1.0, decay: 0.01,
                     type: 'half', side
@@ -265,7 +324,7 @@
                 const nearestX = prev.x + t * dx;
                 const nearestY = prev.y + t * dy;
                 const dist = Math.hypot(f.x - nearestX, f.y - nearestY);
-                if (dist < f.size * 0.8) {
+                if (dist < f.size * 0.75) {
                     f.sliced = true;
                     if (f.type === 'bomb') {
                         spawnBombExplosion(f);
@@ -308,7 +367,11 @@
         window.addEventListener('touchend', onEnd);
 
         startBtn.addEventListener('click', resetGame);
-        restartBtn.addEventListener('click', resetGame);
+        restartBtn.addEventListener('click', () => {
+            startOverlay.classList.remove('hidden');
+            gameOverOverlay.classList.add('hidden');
+            gameState = 'start';
+        });
 
         function update() {
             if (gameState !== 'playing') return;
@@ -316,13 +379,12 @@
             spawnTimer++;
             if (spawnTimer >= spawnInterval) {
                 spawnFruit();
-                // spawn batch occasionally
-                if (Math.random() < 0.35) {
+                if (Math.random() < diffConfig.batchChance) {
                     setTimeout(spawnFruit, 180 + Math.random() * 220);
-                    if (Math.random() < 0.2) setTimeout(spawnFruit, 380 + Math.random() * 200);
+                    if (Math.random() < 0.35) setTimeout(spawnFruit, 380 + Math.random() * 200);
                 }
                 spawnTimer = 0;
-                spawnInterval = Math.max(28, 45 - difficulty * 2);
+                spawnInterval = Math.max(diffConfig.spawnMin, diffConfig.spawnBase - difficulty * 2);
             }
             difficulty += 0.0005;
 
@@ -356,25 +418,23 @@
         function draw() {
             ctx.clearRect(0, 0, W, H);
 
-            // trail
             if (trail.length > 2) {
                 ctx.beginPath();
                 ctx.moveTo(trail[0].x, trail[0].y);
                 for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
-                ctx.lineWidth = 6;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.shadowBlur = 18;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.85)';
                 ctx.stroke();
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)';
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.95)';
                 ctx.stroke();
                 ctx.shadowBlur = 0;
             }
 
-            // fruits
             for (let f of fruits) {
                 if (f.sliced) continue;
                 ctx.save();
@@ -383,13 +443,12 @@
                 ctx.font = `${f.size}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 12;
                 ctx.shadowColor = 'rgba(0,0,0,0.2)';
                 ctx.fillText(f.item.emoji, 0, 2);
                 ctx.restore();
             }
 
-            // particles
             for (let p of particles) {
                 ctx.save();
                 ctx.globalAlpha = Math.max(0, p.life);
